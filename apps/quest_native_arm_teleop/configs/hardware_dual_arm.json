@@ -1,0 +1,82 @@
+{
+  "model": "ccs_m3_2.0_0510",
+  "model_label": "M6S Lite · CCS-615",
+  "visual_model": "marvin_m6s_lite_615_v1",
+  "control_hz": 90,
+  "broadcast_hz": 25,
+  "input_timeout_s": 0.25,
+  "tracking_loss_grace_s": 0.25,
+  "keyboard_auto_recover_tracking": true,
+  "frame_age_limit_s": 0.15,
+  "position_scale": 0.35,
+  "filter_time_s": 0.001,
+  "heading_source": "fixed",
+  "input_filter": {
+    "type": "one_euro",
+    "min_cutoff_hz": 1.0,
+    "beta": 0.7,
+    "derivative_cutoff_hz": 1.0,
+    "position_beta_scale": 20.0,
+    "rotation_beta_scale": 4.0
+  },
+  "max_target_speed_m_s": 0.12,
+  "max_target_rotation_rad_s": 0.50,
+  "max_joint_speed_deg_s": 20,
+  "reset_duration_s": 2.0,
+  "max_reset_speed_deg_s": 3,
+  "max_reset_accel_deg_s2": 6,
+  "max_joint_step_deg": 2,
+  "ik_max_iterations": 3,
+  "ik_position_tolerance_m": 0.00002,
+  "ik_rotation_tolerance_rad": 0.0002,
+  "ik_rotation_weight_m": 0.18,
+  "ik_damping": 0.002,
+  "ik_centering": 0.08,
+  "workspace_radius_m": 0.95,
+  "controller_jump_m": 0.10,
+  "controller_jump_rad": 0.5,
+  "operator_yaw_deg": 0,
+  "hardware": {
+    "enabled": false,
+    "robot_ip": "192.168.1.190",
+    "vel_ratio": 60,
+    "acc_ratio": 60,
+    "feedback_timeout_s": 0.2,
+    "send_clear_timeout_s": 0.04,
+    "max_tracking_error_deg": 8,
+    "tracking_error_timeout_s": 0.2,
+    "motion_scope": "full",
+    "control_sides": ["left", "right"],
+    "servo_mode": "impedance",
+    "joint_k": [2, 2, 2, 1.6, 1, 1, 1],
+    "joint_d": [0.3, 0.3, 0.3, 0.2, 0.2, 0.2, 0.2],
+    "tool_kine": [0, 0, 0, 0, 0, 0],
+    "tool_dyn": [0.95, 0, 0, 90, 0, 0, 0, 0, 0, 0],
+    "startup_move_enabled": true,
+    "startup_duration_s": 3.0,
+    "startup_settle_s": 3.0,
+    "startup_dt_s": 0.01,
+    "startup_tolerance_deg": 5.0,
+    "startup_joints_deg": {
+      "left": [55.0, -65.0, -70.0, -60.0, 60.0, 0.0, 0.0],
+      "right": [-55.0, -65.0, 70.0, -60.0, -60.0, 0.0, 0.0]
+    },
+    "minimum_jacobian_singular_value": 0.03
+  },
+  "arms": {
+    "left": {
+      "base_position_m": [0, 0.049, 1.15],
+      "base_rotation_xyz_deg": [-90, 0, 0],
+      "initial_joints_deg": [89.829016926, -85.118939049, -93.699679333, -89.256915292, -4.859817826, -0.255204348, -3.749329391],
+      "controller_to_wrist_m": [0, 0, 0],
+      "controller_to_wrist_xyzw": [0, 0, 0, 1]
+    },
+    "right": {
+      "base_position_m": [0, -0.049, 1.15],
+      "base_rotation_xyz_deg": [90, 0, 0],
+      "initial_joints_deg": [-89.829016926, -85.118939049, 93.699679333, -89.256915292, 4.859817826, -0.255204348, 3.749329391],
+      "controller_to_wrist_m": [0, 0, 0],
+      "controller_to_wrist_xyzw": [0, 0, 0, 1]
+    }
+  }
+}

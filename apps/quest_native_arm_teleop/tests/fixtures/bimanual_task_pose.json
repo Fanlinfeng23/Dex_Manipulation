@@ -1,0 +1,9 @@
+{
+  "description": "Former 36 cm bimanual home with world-aligned flange axes and its historical example base placement. Explicit IK fixture; not the current 98 mm hardware installation.",
+  "base_position_m": {
+    "left": [0, 0.23, 1.15],
+    "right": [0, -0.23, 1.15]
+  },
+  "left": [57.401641, -82.10209, -30.034967, -99.788589, -33.456095, 17.989681, 65.926283],
+  "right": [-57.401641, -82.10209, 30.034967, -99.788589, 33.456095, 17.989681, -65.926283]
+}

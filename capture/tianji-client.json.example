@@ -1,0 +1,8 @@
+{
+  "package": "com.xrobotoolkit.client.quest.tianji",
+  "component": "com.xrobotoolkit.client.quest.tianji/com.tianji.xrobotoolkit.AutoSetupActivity",
+  "version": "1.0.1-tianji.1",
+  "apk": "downloads/XRoboToolkit-Tianji-Auto-1.0.1-tianji.1.apk",
+  "sha256": "REPLACE_WITH_LOCAL_APK_SHA256",
+  "upstream_sha256": "c8a077451e7f6b66ca688668d7b32f5a6a6c19a8c0fa4657f2e1344493c174df"
+}

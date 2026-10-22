@@ -1,0 +1,2 @@
+# Allow members of plugdev to use the Quest ADB USB interface.
+SUBSYSTEM=="usb", ENV{DEVTYPE}=="usb_device", ATTR{idVendor}=="2833", MODE="0660", GROUP="plugdev", TAG+="uaccess"

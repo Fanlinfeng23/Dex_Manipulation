@@ -1,0 +1,9 @@
+{
+  "description": "Synthetic inward-facing pose with its historical example base placement for IK closure regression only; not the application's default home or a measured hardware pose.",
+  "base_position_m": {
+    "left": [0, 0.23, 1.15],
+    "right": [0, -0.23, 1.15]
+  },
+  "left": [27.085600, -38.081631, -3.663357, -108.492045, 28.706877, -2.191715, 3.574148],
+  "right": [-27.085600, -38.081631, 3.663357, -108.492045, -28.706877, -2.191715, -3.574148]
+}

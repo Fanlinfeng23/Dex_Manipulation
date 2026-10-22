@@ -1,0 +1,9 @@
+{
+  "name": "quest-arm-teleop-preview",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local Quest controller input and Tianji dual-arm kinematic preview",
+  "dependencies": { "three": "0.180.0" },
+  "devDependencies": { "@playwright/test": "1.55.1" }
+}

@@ -1,0 +1,123 @@
+{
+  "model": "ccs_m3_2.0_0510",
+  "model_label": "M6S Lite · CCS-615",
+  "visual_model": "marvin_m6s_lite_615_v1",
+  "control_hz": 90,
+  "broadcast_hz": 25,
+  "input_timeout_s": 0.25,
+  "frame_age_limit_s": 0.15,
+  "position_scale": 0.35,
+  "filter_time_s": 0.035,
+  "max_target_speed_m_s": 0.12,
+  "max_target_rotation_rad_s": 0.5,
+  "max_joint_speed_deg_s": 20,
+  "reset_duration_s": 2.0,
+  "max_reset_speed_deg_s": 30,
+  "max_reset_accel_deg_s2": 60,
+  "max_joint_step_deg": 2,
+  "ik_max_iterations": 3,
+  "ik_position_tolerance_m": 2e-05,
+  "ik_rotation_tolerance_rad": 0.0002,
+  "ik_rotation_weight_m": 0.18,
+  "ik_damping": 0.002,
+  "ik_centering": 0.08,
+  "workspace_radius_m": 0.95,
+  "controller_jump_m": 0.15,
+  "controller_jump_rad": 0.8,
+  "operator_yaw_deg": 0,
+  "hardware": {
+    "enabled": false,
+    "robot_ip": "192.168.1.190",
+    "vel_ratio": 10,
+    "acc_ratio": 10,
+    "feedback_timeout_s": 0.2,
+    "max_tracking_error_deg": 8,
+    "tracking_error_timeout_s": 0.2,
+    "motion_scope": "full",
+    "servo_mode": "impedance",
+    "joint_k": [
+      0.9,
+      0.9,
+      0.6,
+      0.6,
+      0.3,
+      0.3,
+      0.3
+    ],
+    "joint_d": [
+      0.6,
+      0.6,
+      0.42,
+      0.42,
+      0.24,
+      0.24,
+      0.24
+    ]
+  },
+  "arms": {
+    "left": {
+      "base_position_m": [
+        0,
+        0.049,
+        1.15
+      ],
+      "base_rotation_xyz_deg": [
+        -90,
+        0,
+        0
+      ],
+      "initial_joints_deg": [
+        89.829016926,
+        -85.118939049,
+        -93.699679333,
+        -89.256915292,
+        -4.859817826,
+        -0.255204348,
+        -3.749329391
+      ],
+      "controller_to_wrist_m": [
+        0,
+        0,
+        0
+      ],
+      "controller_to_wrist_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ]
+    },
+    "right": {
+      "base_position_m": [
+        0,
+        -0.049,
+        1.15
+      ],
+      "base_rotation_xyz_deg": [
+        90,
+        0,
+        0
+      ],
+      "initial_joints_deg": [
+        -89.829016926,
+        -85.118939049,
+        93.699679333,
+        -89.256915292,
+        4.859817826,
+        -0.255204348,
+        3.749329391
+      ],
+      "controller_to_wrist_m": [
+        0,
+        0,
+        0
+      ],
+      "controller_to_wrist_xyzw": [
+        0,
+        0,
+        0,
+        1
+      ]
+    }
+  }
+}

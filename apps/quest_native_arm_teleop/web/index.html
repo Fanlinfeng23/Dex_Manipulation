@@ -1,0 +1,59 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>XRoboToolkit 原生 Quest 遥操</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/style.css">
+  <script type="importmap">{"imports":{"three":"/vendor/three/build/three.module.js","three/addons/":"/vendor/three/examples/jsm/"}}</script>
+</head>
+<body>
+  <header class="app-header">
+    <div class="brand"><h1>原生 Quest 遥操</h1><p>官方 XRoboToolkit 采集 · 天机双臂 · 状态页只读</p></div>
+    <div class="header-actions"><span id="mode-label" class="mode-label">虚拟预演</span></div>
+  </header>
+  <main>
+    <section id="next-step" class="next-step" aria-live="assertive"><span>下一步</span><strong id="next-step-text">正在连接控制服务…</strong></section>
+    <section class="console-grid" aria-label="电脑遥操状态">
+      <div class="console-card"><span>控制服务</span><strong id="console-service">连接中</strong></div>
+      <div class="console-card"><span>天机控制柜</span><strong id="console-robot">等待</strong></div>
+      <div class="console-card"><span>Quest 输入</span><strong id="console-quest">等待</strong></div>
+      <div class="console-card"><span>映射校准</span><strong id="console-calibration">未校准</strong></div>
+      <div class="hand-card left"><div><span>左手柄 / 左臂</span><strong id="left-hand-state">等待</strong></div><div class="trigger-meter"><i id="left-trigger-bar"></i></div><small id="left-trigger-detail">食指扳机 —</small></div>
+      <div class="hand-card right"><div><span>右手柄 / 右臂</span><strong id="right-hand-state">等待</strong></div><div class="trigger-meter"><i id="right-trigger-bar"></i></div><small id="right-trigger-detail">食指扳机 —</small></div>
+    </section>
+    <section class="toolbar" aria-label="预演控制">
+      <label>手柄输入 <select id="source"><option value="quest">XRoboToolkit 原生</option></select></label>
+      <span class="divider"></span><label>模型 <span id="model" class="model-name">正在加载…</span></label>
+      <div class="toolbar-buttons"><button id="arm" class="primary" title="在电脑上建立双手柄与机械臂的相对映射，不会使机械臂运动">校准双臂映射</button><button id="pause" aria-pressed="false" disabled title="暂停双臂并保持实测位置">Ⅱ 暂停并保持</button><button id="reset">B 恢复初始</button><label class="voice-toggle"><input id="voice" type="checkbox" checked> 电脑语音提示</label></div>
+    </section>
+    <div class="workspace">
+      <section class="viewport" aria-label="虚拟双臂三维视图">
+        <div id="scene"></div>
+        <div class="viewport-top"><span><i class="dot orange"></i>左臂 <i class="dot blue"></i>右臂</span><button id="view-reset" class="small">复位视角</button></div>
+        <div id="model-status" role="status">正在加载机器人模型…</div>
+        <div class="viewport-bottom"><span>拖动旋转 · 滚轮缩放 · 右键平移</span><span>坐标：X 前 / Y 左 / Z 上</span></div>
+        <div id="scene-error" hidden></div>
+      </section>
+      <aside class="inspector">
+        <section class="status-block"><h2>机器人状态</h2><div class="state-heading"><i id="state-dot" class="status-dot"></i><strong id="state-label">连接服务中</strong></div><p id="reason" aria-live="polite">正在加载运动学和三维模型…</p><p id="trigger-status">扳机输入：等待数据</p><p id="feedback-status" hidden></p></section>
+        <section class="scale-block"><label for="scale">移动比例 <output id="scale-value">0.75</output></label><input id="scale" type="range" min="0.05" max="1" step="0.05" value="0.75"><p>改变比例后需按 A 重新校准</p></section>
+        <section class="joints-block"><div class="joint-titles"><h2><i class="dot orange"></i>左臂关节角 (°)</h2><h2><i class="dot blue"></i>右臂关节角 (°)</h2></div><div id="joint-table"></div><div class="tracking"><span id="left-tracking">左手：等待</span><span id="right-tracking">右手：等待</span></div></section>
+      </aside>
+    </div>
+    <section id="simulation-panel" class="simulation-panel">
+      <h2>模拟手柄控制 <span>先校准 → 勾选模拟扳机 → 调整位置或旋转</span></h2>
+      <div class="sim-controls">
+        <div class="side-select"><span>手部选择</span><div class="segmented"><button id="left-side" class="selected left">左手</button><button id="right-side">右手</button></div></div>
+        <div class="sliders"><span>WebXR 偏移 (m) · X 右 / Y 上 / Z 后</span><div id="position-sliders"></div></div>
+        <div class="sliders"><span>旋转 (°)</span><div id="rotation-sliders"></div></div>
+        <div class="sim-actions"><label><input id="grip" type="checkbox"> 模拟扳机</label><button id="demo">▶ 轨迹演示</button><button id="sim-home" class="small">手柄偏移归零</button></div>
+      </div>
+    </section>
+    <section id="quest-panel" class="quest-panel" hidden><h2>XRoboToolkit 官方采集</h2><p>此页仅显示状态。官方 APK 当前未提供每侧光学追踪有效性，数值门禁不能证明相机仍看见手柄。启动和恢复由本机终端控制：A 校准并继续、B 暂停、空格暂停或恢复；失焦或采集中断时双臂保持。请在官方应用中启用 Head、Controller、Send，并保持头显与手柄唤醒。</p><p><a href="/api/trajectory" download>导出最近 2 分钟轨迹</a></p></section>
+    <footer><div><span id="connection"><i class="dot"></i>连接中</span><span id="frequency">— Hz</span><span id="age">帧龄 —</span><span id="sequence">帧 —</span></div><span id="scope-note">安装面间距 98 mm · 未启用碰撞检测 · 不连接实机</span></footer>
+    <div id="toast" role="status" hidden></div>
+  </main>
+  <script type="module" src="/static/app.js"></script>
+</body>
+</html>
