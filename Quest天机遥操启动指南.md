@@ -1,6 +1,8 @@
 # 天机双臂 + Wuji 双手联合遥操启动指南
 
-本指南有两套互斥的实机入口：**Quest 双手柄 + 左右 Wuji Glove**，或 **两只 Vive Tracker + 左右 Wuji Glove**。两套都控制天机左右臂和左右 Wuji Hand2；手套负责手指，Quest 手柄或 Vive Tracker 负责双臂。请在同一台现场电脑的交互式终端运行命令，保持急停可触达、机械臂和灵巧手运动范围净空。不要同时启动两套入口。
+本指南有两套互斥的实机入口：**Quest 双手柄 + 左右 Wuji Glove**，或 **两只 Vive Tracker + 左右 Wuji Glove**。两套都控制天机左右臂和左右 Wuji Hand2；手套负责手指，Quest 手柄或 Vive Tracker 负责双臂。以下命令均在项目根目录执行：本机先运行 `cd /home/tianji/桌面/dex`，从 GitHub 克隆时则进入实际的 `Dex_Manipulation` 仓库目录。请使用交互式终端，保持急停可触达、机械臂和灵巧手运动范围净空。不要同时启动两套入口。
+
+首次部署克隆仓库时，先按仓库 `README.md` 与 `PUBLISH_MANIFEST.md` 安装外部 SDK 和采集服务，执行 `./setup_python.sh`；Quest 状态页还需在 `apps/quest_native_arm_teleop/` 执行 `npm ci --ignore-scripts`。本机已有这些运行依赖，无需每次重复安装。
 
 两套共用同一操作者的左右手模型。`--model-user operator_a` 选择已完成左右手标定的模型；`--calibrate-user operator_a` 依次重标左、右手。**不带这两个参数时，设备识别完成后会在启动命令所在的电脑终端显示模型菜单；在 `选择编号 / c：` 提示处输入小写 `c` 并回车，才进入手套标定。**这里的 `c` 不是头显或 Tracker 按键。看到 `准备好左手后，按回车开始标定：` 后只做左手姿势，随后按提示完成右手；两侧都成功才会继续实机流程。更换操作员或手套佩戴变化时，请选该操作员已有的双侧模型或重新标定两侧。模型由 Wuji SDK 保存于 `~/.wuji/sdk/users/<用户ID>/models/{left,right}_hand.urdf`。
 
@@ -8,12 +10,11 @@
 
 ## 一、Quest 双手柄 + Wuji Glove（原联合方案）
 
-给天机双臂、左右 Hand2 与 Glove 上电。两只 Quest 手柄分别固定在左右手套连接件上。Quest 3S 用 USB 数据线连接电脑并保持唤醒；首次 ADB 授权或系统锁屏提示仍需在头显内处理。正常启动由电脑自动连接 XRoboToolkit PC Service `127.0.0.1`，打开 Head、Controller、Send，关闭 Switch w/ A Button。把头显刚性固定在颈前，外侧相机朝向双手工作区，避免衣领、下巴或连接件挡住手柄。手柄必须留在相机可见范围内。
+给天机双臂、左右 Hand2 与 Glove 上电。两只 Quest 手柄分别固定在左右手套连接件上。Quest 3S 用 USB 数据线连接电脑并保持唤醒；首次 ADB 授权或系统锁屏提示仍需在头显内处理。本机已安装的自动配置客户端可由电脑设置 PC Service `127.0.0.1`、Head、Controller、Send，并关闭 Switch w/ A Button；**GitHub 仓库不包含该 APK**，克隆后须按[Quest 采集依赖说明](capture/README.md)构建、安装并配置校验清单。若使用官方原版客户端，则需在头显中手动完成这些设置。把头显刚性固定在颈前，外侧相机朝向双手工作区，避免衣领、下巴或连接件挡住手柄。手柄必须留在相机可见范围内。
 
 已标定双手模型时运行：
 
 ```bash
-cd /home/tianji/桌面/dex
 ./tianji_quest.sh joint --model-user operator_a
 ```
 
@@ -21,7 +22,7 @@ cd /home/tianji/桌面/dex
 
 终端按键无需回车：**空格**开始或暂停，**A**重新对齐，**B**暂停，**Q/Esc**结束。手柄短时失追会使双臂与双手暂停；首次开始后，追踪重新稳定时原 Quest 联合控制会从实测臂姿态重锚并自动继续。人为暂停、应用失焦、采集会话重启或硬件故障仍需要现场处理；不要用反复按空格越过故障。Quest 原生输入没有逐侧官方光学有效位，网页显示 `tracked` 只是本地数值检查，不能证明手柄持续被相机看到。
 
-常用只读和恢复命令：
+检查、停止与复位命令：
 
 ```bash
 ./tianji_quest.sh check       # Quest、天机和四台 Wuji 设备只读检查
@@ -39,11 +40,10 @@ cd /home/tianji/桌面/dex
 先完成**只读双腕标定**。它不连接或运动天机臂，左右手套也不驱动灵巧手：
 
 ```bash
-cd /home/tianji/桌面/dex
 ./tianji_vive.sh calibrate --expected-baseline-m 0.240
 ```
 
-程序先验证双腕和双站连续定位，再依次提示左腕、右腕 pivot：把前臂稳固地支在桌面或支架上，尽量固定解剖手腕中心，按回车后在 8 秒内沿至少两个方向缓慢转动手腕，勿移动前臂或让连接件滑动。**左腕先前出现 RMS 20.3 mm、最大 40.5 mm，尚未达到实机标定标准**；程序保留 8 mm RMS、20 mm 最大残差门槛，失败时保存 `logs/vive-pivot-*.json` 并允许只重采该腕，不会放松门槛或保存半成品。随后按提示做双腕静止中位与两次 20–30 cm 前向平移，建立操作朝向。成功后生成 `vive_tianji_calibration.json`；改动连接件、基站位置或 SteamVR 站立参考系后必须重标。
+程序先验证双腕和双站连续定位，再依次提示左腕、右腕 pivot：把前臂稳固地支在桌面或支架上，尽量固定解剖手腕中心，按回车后在 8 秒内沿至少两个方向缓慢转动手腕，勿移动前臂或让连接件滑动。**左腕先前出现 RMS 20.3 mm、最大 40.5 mm，尚未达到实机标定标准**；程序保留 8 mm RMS、20 mm 最大残差门槛，pivot 拟合失败时保存 `logs/vive-pivot-*.json` 并允许只重采该腕，不会放松门槛或保存半成品。随后按提示做双腕静止中位与两次 20–30 cm 前向平移，建立操作朝向。成功后生成 `vive_tianji_calibration.json`；改动连接件、基站位置或 SteamVR 站立参考系后必须重标。
 
 如果手腕转心难以保持不动，也可以先用量具或连接件 CAD **分别实测**从每只 HTC Tracker 3.0 安装螺孔中心与贴合环面交点到该侧解剖手腕中心、在 Tracker **局部 X/Y/Z 坐标系**下的带符号向量（单位 mm）。确认 HTC 官方坐标轴方向和连接件安装朝向后，运行：
 

@@ -11,6 +11,19 @@
 
 **当前验收状态：** Quest 联合版现有代码保留；Vive 与双 Wuji 手的联合监督、门控已完成离线测试。现场左腕 pivot 曾出现 20.3 mm RMS，正式双腕标定文件尚未生成，因此 Vive 联合版尚未完成实机运动验收。离线测试结果不能代替末端精度验收。
 
+## 文件结构
+
+| 路径 | 用途 |
+| --- | --- |
+| `Quest天机遥操启动指南.md` | Quest+双手套、Vive+双手套两套最终操作流程 |
+| `tianji_quest.sh`、`tianji_vive.sh`、`tianji_vive_joint.sh` | 现场启动入口；其余根目录脚本提供维护、兼容入口和 Wuji 手部控制 |
+| `apps/quest_native_arm_teleop/` | 共用天机臂控制、Quest 原生桥、网页状态页和设备诊断 |
+| `vive_tianji/` | 双 Tracker 采集、标定、相对映射、联合监督和会话分析 |
+| `capture/` | Quest 采集管理器及可选自动配置客户端的构建源码 |
+| `tests/`、各模块内的 `tests/` | 离线测试；`licenses/` 保存第三方许可声明 |
+
+`Vive双追踪器遥操架构与精度报告.md` 记录官方实现对照和现场只读测量；`PUBLISH_MANIFEST.md` 列出未随仓库发布的外部依赖。会话日志、个人手套模型、双腕标定文件和安装产生的缓存均保存在现场电脑，不属于源码树。
+
 ## 部署依赖
 
 `./setup_python.sh` 创建两套入口所需的 Python 环境。实际运行还需安装天机 Marvin 厂商 SDK、Wuji SDK 与设备、SteamVR/OpenVR，以及 Quest 模式所需的 XRoboToolkit 官方客户端和 PC Service。手套新标定使用 Wuji 官方 SDK 的 `examples/python/wuji_glove/5.calibration.py`：默认放在本仓库 `wuji-sdk/` 下，或设置 `WUJI_CALIBRATION_EXAMPLE` 指向本机已获授权的示例文件。厂商 SDK、该官方示例、APK、手部模型、标定文件、设备密钥和现场日志均未纳入本仓库。获取方式、默认路径及 `TIANJI_SDK_ROOT`、`TIANJI_QUEST_CAPTURE_DIR`、`TIANJI_ARM_PYTHON` 等覆盖变量见 [发布清单](PUBLISH_MANIFEST.md) 和 [Quest 采集说明](capture/README.md)。
