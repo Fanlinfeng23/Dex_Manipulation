@@ -1,7 +1,7 @@
 """Tianji joint impedance output using the vendor Marvin SDK.
 
-The mode/parameter sequence follows Wuji's CartesianController. Waiting is
-advanced by poll(), never by sleeping inside the live input/control loop.
+The Vive opt-in loads impedance parameters before servo-on, following Wuji's
+chest driver. Waiting advances through poll(), outside the live input loop.
 """
 from __future__ import annotations
 
@@ -136,7 +136,13 @@ class TianjiHardwareOutput:
                         not np.all((-20 < temperatures) & (temperatures < 150))):
                     raise HardwareError(
                         f'{side}: 轴温度/编码器遥测为占位值；检查机械臂 DC48V 驱动电源和 EtherCAT')
-                if error:
+                # Wuji's driver observes state=100–103 while switching into
+                # impedance.  err_code=6 accompanies this transient on some
+                # controllers; it is not a latched fault until the switch
+                # times out.  All other errors remain fatal.
+                switching = (self.phase == 'state_after_params' and
+                             state in (100, 101, 102, 103) and error == 6)
+                if error and not switching:
                     detail = '急停' if error == 13 else '控制柜故障'
                     raise HardwareError(f'{side}: {detail}，错误码 {error}；请在现场 / 厂家软件排查')
                 if serial != 0 and serial != self._serials[i]:
@@ -406,6 +412,20 @@ class TianjiHardwareOutput:
     def _begin_enable(self, feedback, vel, acc):
         if feedback['states'] != [0, 0]:
             raise HardwareError('使能前双臂必须在待机状态')
+        if self.settings.get('impedance_params_before_enable', False):
+            # Match Wuji's set_impedance_mode(): load gains and mode while
+            # both arms are still in standby, then allow the SDK packet to
+            # settle before requesting state=3.  No robot target is sent yet.
+            self._clear_set()
+            for arm in ('A', 'B'):
+                self._check(self.robot.set_joint_kd_params(
+                    arm, self.settings['joint_k'], self.settings['joint_d']),
+                    f'{arm} 关节阻抗参数')
+                self._check(self.robot.set_impedance_type(arm, 1),
+                            f'{arm} 关节阻抗类型')
+            self._check(self.robot.send_cmd(), '发送待机状态关节阻抗参数与类型')
+            self.phase, self.deadline = 'impedance_parameters', self.clock() + .5
+            return False
         self._clear_set()
         # Seed the current measured pose in the same packet as servo-on;
         # never inherit an old client's joint target.
@@ -437,6 +457,27 @@ class TianjiHardwareOutput:
             if self.phase == 'tool_parameters' and now >= self.deadline:
                 vel, acc = self.settings.get('vel_ratio', 20), self.settings.get('acc_ratio', 20)
                 self._begin_enable(feedback, vel, acc)
+            elif self.phase == 'impedance_parameters' and now >= self.deadline:
+                if feedback['states'] != [0, 0]:
+                    raise HardwareError('准备关节阻抗时双臂不在待机状态')
+                self._clear_set()
+                # The input pose is sampled again after the 0.5 s settling
+                # interval, so the enable packet cannot inherit a stale goal.
+                self._write_targets(self.held_joints(feedback['joints']), holding=True)
+                vel, acc = self.settings['vel_ratio'], self.settings['acc_ratio']
+                for arm in ('A', 'B'):
+                    self._check(self.robot.set_state(arm, 3), f'{arm} 进入阻抗状态')
+                    self._check(self.robot.set_vel_acc(arm, vel, acc), f'{arm} 速度比例')
+                self._motion_started = True
+                self._check(self.robot.send_cmd(), '发送关节阻抗使能与当前目标')
+                self.phase, self.deadline = 'state_after_params', now + 5.
+                self._phase_serials = feedback['serials'].copy()
+            elif self.phase == 'state_after_params':
+                if now > self.deadline:
+                    raise HardwareError('天机未在 5 秒内进入关节阻抗状态')
+                if feedback['states'] == [3, 3] and all(
+                        a != b for a, b in zip(feedback['serials'], self._phase_serials)):
+                    self.enabled, self.phase = True, None
             elif self.phase == 'position_parameters' and now >= self.deadline:
                 if feedback['states'] != [0, 0]:
                     raise HardwareError('准备位置模式时双臂不在待机状态')

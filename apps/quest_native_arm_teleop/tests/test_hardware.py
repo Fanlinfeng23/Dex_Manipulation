@@ -163,7 +163,7 @@ class HardwareOutputTests(unittest.TestCase):
         with self.assertRaisesRegex(HardwareError, '非控制臂偏移'):
             tick(output)
 
-    def test_official_mode_gain_type_sequence_without_blocking(self):
+    def test_quest_legacy_mode_gain_type_sequence_without_blocking(self):
         output = adapter()
         with patch('quest_teleop.hardware.time.sleep', side_effect=AssertionError('blocking enable')):
             ready(output)
@@ -172,6 +172,69 @@ class HardwareOutputTests(unittest.TestCase):
         self.assertLess(names.index('set_state'), names.index('set_joint_kd_params'))
         self.assertLess(names.index('set_joint_kd_params'), names.index('set_impedance_type'))
         self.assertFalse(output.enabling)
+
+    def test_vive_impedance_parameters_precede_servo_on_with_fresh_measured_seed(self):
+        config = load_config('configs/hardware_dual_arm.json', hardware=True)
+        config['hardware'].update(startup_move_enabled=False,
+                                  impedance_params_before_enable=True)
+        output = adapter(config)
+        with patch('quest_teleop.hardware.time.sleep',
+                   side_effect=AssertionError('blocking enable')):
+            self.assertFalse(output.enable())
+            self.assertEqual(output.phase, 'tool_parameters')
+            tick(output, .31)
+            self.assertEqual(output.phase, 'impedance_parameters')
+            self.assertEqual(output.data['states'][0]['cur_state'], 0)
+            output.robot.set_state.assert_not_called()
+            output.robot.set_joint_cmd_pose.assert_not_called()
+            tick(output, .49)
+            output.robot.set_state.assert_not_called()
+            # Seed from feedback observed after the official 0.5 s wait.
+            output.data['outputs'][0]['fb_joint_pos'] = [1.25] * 7
+            output.data['outputs'][1]['fb_joint_pos'] = [-2.5] * 7
+            tick(output, .02)
+            self.assertEqual(output.phase, 'state_after_params')
+            self.assertEqual(output.robot.set_joint_cmd_pose.call_args_list[0].args,
+                             ('A', [1.25] * 7))
+            self.assertEqual(output.robot.set_joint_cmd_pose.call_args_list[1].args,
+                             ('B', [-2.5] * 7))
+            self.assertEqual([c.args for c in output.robot.set_state.call_args_list],
+                             [('A', 3), ('B', 3)])
+            self.assertEqual([c.args for c in output.robot.set_vel_acc.call_args_list],
+                             [('A', 60, 60), ('B', 60, 60)])
+            calls = [call[0] for call in output.robot.method_calls]
+            self.assertLess(calls.index('set_tool'), calls.index('set_joint_kd_params'))
+            self.assertLess(calls.index('set_joint_kd_params'), calls.index('set_impedance_type'))
+            self.assertLess(calls.index('set_impedance_type'), calls.index('set_state'))
+            self.assertEqual(output.robot.send_cmd.call_count, 3)
+
+            # A vendor switching code may temporarily carry err_code=6.
+            output.data['states'][0].update(cur_state=100, err_code=6)
+            output.data['states'][1].update(cur_state=102, err_code=6)
+            tick(output, .02)
+            self.assertFalse(output.enabled)
+            for row in output.data['states']:
+                row.update(cur_state=3, err_code=0)
+            tick(output, .02)
+            self.assertTrue(output.enabled)
+            self.assertIsNone(output.phase)
+            self.assertEqual(output.robot.set_joint_kd_params.call_count, 2)
+
+    def test_vive_impedance_switch_faults_on_unexpected_error_or_timeout(self):
+        config = load_config('configs/hardware_dual_arm.json', hardware=True)
+        config['hardware'].update(startup_move_enabled=False,
+                                  impedance_params_before_enable=True)
+        output = adapter(config)
+        output.enable(); tick(output, .31); tick(output, .51)
+        output.data['states'][0].update(cur_state=100, err_code=13)
+        with self.assertRaisesRegex(HardwareError, '急停'):
+            tick(output)
+        output = adapter(config)
+        output.enable(); tick(output, .31); tick(output, .51)
+        with self.assertRaisesRegex(HardwareError, '5 秒'):
+            tick(output, 5.01)
+        self.assertFalse(output.enabled)
+        self.assertIsNotNone(output.fault)
 
     def test_no_silent_send_while_disabled(self):
         output = adapter()

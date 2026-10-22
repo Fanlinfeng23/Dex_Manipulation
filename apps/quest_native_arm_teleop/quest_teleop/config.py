@@ -97,10 +97,13 @@ def load_config(path: str | Path | None = None, *, hardware=False) -> dict:
     hardware.setdefault('motion_scope', 'full')
     hardware.setdefault('servo_mode', 'impedance')
     hardware.setdefault('control_sides', ['left', 'right'])
+    hardware.setdefault('impedance_params_before_enable', False)
     if hardware['motion_scope'] not in ('wrist', 'full'):
         raise ValueError('hardware.motion_scope 必须为 wrist 或 full')
     if hardware['servo_mode'] not in ('position', 'impedance'):
         raise ValueError('hardware.servo_mode 必须为 position 或 impedance')
+    if type(hardware['impedance_params_before_enable']) is not bool:
+        raise ValueError('hardware.impedance_params_before_enable 必须为布尔值')
     control_sides = hardware['control_sides']
     if (not isinstance(control_sides, list) or not control_sides or
             any(side not in ('left', 'right') for side in control_sides) or
@@ -121,6 +124,10 @@ def load_config(path: str | Path | None = None, *, hardware=False) -> dict:
     if len(control_sides) == 1:
         if hardware['servo_mode'] != 'position':
             raise ValueError('单臂验证只允许使用厂家位置模式')
+    if hardware['impedance_params_before_enable'] and (
+            hardware['servo_mode'] != 'impedance' or control_sides != ['left', 'right'] or
+            hardware.get('startup_move_enabled', False)):
+        raise ValueError('官方待机预设阻抗顺序仅用于双臂、无自动初始姿态的阻抗跟随')
     if hardware['motion_scope'] == 'full' and hardware['servo_mode'] == 'position':
         # A bounded startup envelope is useful for staged/single-arm validation,
         # but is deliberately optional for the final dual-arm profile.  Joint
@@ -137,8 +144,8 @@ def load_config(path: str | Path | None = None, *, hardware=False) -> dict:
     if hardware['motion_scope'] == 'full':
         minimum_singular = hardware.get('minimum_jacobian_singular_value')
         if minimum_singular is not None and (type(minimum_singular) not in (int, float) or
-                not math.isfinite(minimum_singular) or not 0 < minimum_singular <= .2):
-            raise ValueError('整臂奇异值门限必须为 0–0.2')
+                not math.isfinite(minimum_singular) or not 0 <= minimum_singular <= .2):
+            raise ValueError('整臂奇异值门限必须为 0–0.2；0 表示关闭额外门禁')
         startup = hardware.setdefault('startup_move_enabled', False)
         if type(startup) is not bool:
             raise ValueError('hardware.startup_move_enabled 必须为布尔值')

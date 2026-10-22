@@ -13,10 +13,12 @@ from unittest.mock import patch
 import numpy as np
 from scipy.spatial.transform import Rotation
 
+from quest_teleop.config import load_config
 from quest_teleop.engine import TeleopEngine
 from quest_teleop.kinematics import Kinematics
 from quest_teleop.math3d import XR_TO_WORLD
 from quest_teleop.protocol import Controller, Frame
+from tools.check_full_arm_pose import check as check_full_arm_pose
 
 from vive_tianji.calibration import basis_from_forward_motion
 from vive_tianji.teleop import (_config, _frame, _read_calibration, _gather,
@@ -497,6 +499,7 @@ class AdapterTests(unittest.TestCase):
         self.assertTrue(config['hardware']['enabled'])
         self.assertFalse(config['hardware']['startup_move_enabled'])
         self.assertEqual(config['hardware']['servo_mode'], 'position')
+        self.assertFalse(config['hardware']['impedance_params_before_enable'])
         self.assertEqual(config['hardware']['control_sides'], ['right'])
         self.assertEqual(config['hardware']['joint_excursion_deg'], 3.0)
         self.assertEqual(config['hardware']['vel_ratio'], 1)
@@ -509,6 +512,8 @@ class AdapterTests(unittest.TestCase):
         config = _config(_calibration(), hardware=True, side='both', scale=1.)
         self.assertFalse(config['hardware']['startup_move_enabled'])
         self.assertEqual(config['hardware']['servo_mode'], 'impedance')
+        self.assertTrue(config['hardware']['impedance_params_before_enable'])
+        self.assertEqual(config['hardware']['minimum_jacobian_singular_value'], 0.)
         self.assertEqual(config['hardware']['vel_ratio'], 60)
         self.assertEqual(config['hardware']['acc_ratio'], 60)
         self.assertEqual(config['hardware']['joint_k'], [2, 2, 2, 1.6, 1, 1, 1])
@@ -537,6 +542,40 @@ class AdapterTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, '仅用于双臂实机'):
             _config(_calibration(), hardware=True, side='right', scale=.5,
                     full_range=True)
+
+    def test_official_singularity_policy_survives_saved_runtime_config(self):
+        config = _config(_calibration(), hardware=True, side='both', scale=1.,
+                         full_range=True)
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_path = Path(temp_dir) / 'vive.json'
+            config_path.write_text(json.dumps(config), encoding='utf-8')
+            loaded = load_config(config_path, hardware=True)
+        self.assertEqual(loaded['hardware']['minimum_jacobian_singular_value'], 0.)
+        self.assertTrue(loaded['hardware']['impedance_params_before_enable'])
+
+    def test_near_singular_valid_pose_no_longer_blocks_vive_startup(self):
+        class NearSingularKinematics:
+            def valid_joints(self, side, joints):
+                return True
+
+            def jacobian(self, side, joints):
+                return np.diag([1., 1., 1., 1., 1., .0299])
+
+        config = _config(_calibration(), hardware=True, side='both', scale=1.,
+                         full_range=True)
+        report = {'ready_for_wrist_test': True,
+                  'arms': {side: {'joints_deg': [0.] * 7} for side in ('left', 'right')}}
+        with tempfile.TemporaryDirectory() as temp_dir:
+            config_path = Path(temp_dir) / 'vive.json'
+            report_path = Path(temp_dir) / 'feedback.json'
+            config_path.write_text(json.dumps(config), encoding='utf-8')
+            report_path.write_text(json.dumps(report), encoding='utf-8')
+            with patch('tools.check_full_arm_pose.Kinematics',
+                       return_value=NearSingularKinematics()):
+                outcome = check_full_arm_pose(report_path, config_path)
+        self.assertTrue(outcome['ready_for_full_arm'], outcome)
+        self.assertAlmostEqual(outcome['arms']['left']['minimum_jacobian_singular_value'],
+                               .0299)
 
     def test_relative_mapping_follows_robot_forward_in_preview(self):
         mapping = basis_from_forward_motion(

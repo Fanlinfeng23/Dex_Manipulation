@@ -95,7 +95,9 @@ def check(report_path: Path, config_path: Path):
         return result
     result['ready_for_full_arm'] = all(arm['passed'] for arm in result['arms'].values())
     if result['ready_for_full_arm']:
-        result['message'] = '所有受控机械臂起始姿态通过奇异位门禁'
+        result['message'] = ('所有受控机械臂起始姿态通过关节限位检查'
+                             if settings['minimum_jacobian_singular_value'] == 0 else
+                             '所有受控机械臂起始姿态通过奇异位门禁')
     else:
         failed = [side for side, arm in result['arms'].items() if not arm['passed']]
         result['failure_class'] = 'near_kinematic_singularity'

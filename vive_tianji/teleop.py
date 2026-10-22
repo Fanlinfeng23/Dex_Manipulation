@@ -608,8 +608,13 @@ def _config(calibration, *, hardware: bool, side: str, scale: float,
         'TIANJI_ROBOT_IP', config['hardware']['robot_ip'])
     config['hardware']['startup_move_enabled'] = False
     config['hardware']['servo_mode'] = 'impedance' if dual_arm else 'position'
+    config['hardware']['impedance_params_before_enable'] = dual_arm
     config['hardware']['vel_ratio'] = 60 if dual_arm else 1
     config['hardware']['acc_ratio'] = 60 if dual_arm else 1
+    if dual_arm:
+        # The official chest controller has no Jacobian sigma-min cutoff.
+        # DLS regularization, joint/coupling limits and speed caps stay active.
+        config['hardware']['minimum_jacobian_singular_value'] = 0.
     if full_range:
         # Full-range still obeys the model joint/coupling limits and the
         # Cartesian/joint software speed bounds.
@@ -640,7 +645,7 @@ def _robot_preflight(config, session_dir: Path):
         json.dumps(gate, ensure_ascii=False, indent=2) + '\n', encoding='utf-8')
     if not gate.get('ready_for_full_arm'):
         raise RuntimeError(f'天机整臂姿态门禁未通过：{gate.get("message")}')
-    print('天机只读诊断与关节/奇异位门禁通过；程序不会执行自动回初始位。')
+    print('天机只读诊断与关节/腕部耦合限位通过；程序不会执行自动回初始位。')
 
 
 def _frame(sample, seq: int, session: str, last_good: dict, *, baseline_limits_m=None):
